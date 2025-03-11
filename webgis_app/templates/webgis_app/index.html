@@ -1,0 +1,53 @@
+<!-- webgis_app/templates/webgis_app/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index Page with Leaflet Map and Search</title>
+
+    <!-- Lidhja për CSS-in e Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Lidhja për CSS-in e Geocoder (Leaflet Control Geocoder) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to the Homepage!</h1>
+    <p>This is a simple index page with Leaflet map and search function below:</p>
+    
+    <!-- Div që mban hartën -->
+    <div id="map"></div>
+
+    <!-- Shto JavaScript për Leaflet dhe Geocoder -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Shto JavaScript për Geocoder -->
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    
+    <script>
+        // Krijo një hartë me Leaflet
+        var map = L.map('map').setView([51.505, -0.09], 13);  // Qendra e hartës dhe shkalla e zmadhimit
+
+        // Shto shtresën OpenStreetMap në hartë
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Shto mundësinë e kërkimit për adresat dhe rrugët
+        L.Control.geocoder({
+            collapsed: false  // Kjo i bën kërkimin të shfaqet gjithmonë
+        }).addTo(map);
+
+        // Kjo është për të vendosur një shenjë për koordinatat fillestare
+        L.marker([51.505, -0.09]).addTo(map)
+            .bindPopup('A sample marker')
+            .openPopup();
+    </script>
+</body>
+</html>
