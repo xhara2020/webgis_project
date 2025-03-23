@@ -15,7 +15,8 @@ import json
     
 
 def locations_geojson(request):
-    locations = Location.objects.all()
+    #locations = Location.objects.all()
+    locations = Location.objects.filter(user=request.user)  # Filtrim sipas userit
     geojson_data = {
         "type": "FeatureCollection",
         "features": []
@@ -54,7 +55,9 @@ def add_location(request):
                     name=name,
                     city=city,
                     branch=branch,
-                    point=f'POINT({longitude} {latitude})'
+                    point=f'POINT({longitude} {latitude})',
+                    user=request.user,
+                    user_name=request.user.username,  # Ruaj emrin e user-it
                 )
                 return JsonResponse({"status": "success", "id": location.id}, status=201)
 
@@ -63,3 +66,13 @@ def add_location(request):
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
     
     return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
+
+
+from django.contrib import messages
+from django.contrib.auth import logout
+from django.shortcuts import redirect
+
+def custom_logout(request):
+    messages.success(request, "U çregjistruat me sukses!")
+    logout(request)
+    return redirect('index_view')

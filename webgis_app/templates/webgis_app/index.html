@@ -40,7 +40,7 @@
         #form-container {
             display: none;
             position: absolute;
-            top: 50px;
+            top: 200px;
             left: 10px;
             background: rgba(255, 255, 255, 0.95);
             padding: 15px;
@@ -52,6 +52,16 @@
     </style>
 </head>
 <body>
+
+	<nav>
+        {% if user.is_authenticated %}
+            <p>Përshëndetje, {{ user.username }}!</p>
+            <a href="{% url 'logout' %}">Dil (Logout)</a>
+        {% else %}
+            <a href="{% url 'login' %}">Hyr (Login)</a>
+        {% endif %}
+    </nav>
+
     <button id="toggle-form">Shto Pikë</button>
 
     <div id="form-container">
