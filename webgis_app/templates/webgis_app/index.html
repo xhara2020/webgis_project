@@ -84,12 +84,41 @@
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
     <script>
-        var map = L.map('map').setView([41.3275, 19.8189], 13); // Tirana
+         var map = L.map('map').setView([41.3275, 19.8189], 13); // Tirana
 
         // Shto OpenStreetMap TileLayer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+        });
+
+        // Shto Esri Satellite Imagery TileLayer
+        var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '&copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+        });
+
+        // Shto WMS Layer nga URL-ja e dhënë
+        var wmsLayer = L.tileLayer.wms("https://geoportal.asig.gov.al/service/adresar/ows?", {
+            layers: 'adr_numertim', // Përdorim emrin e saktë të layer-it që ofron shërbimi
+            format: 'image/png',
+            transparent: true,
+            attribution: "Shërbimi i Hartës WMS"
+        });
+
+        // Shto kontrollin për ndërrimin midis layer-ëve
+        var baseMaps = {
+            "OpenStreetMap": osmLayer,
+            "Satelit": satelliteLayer
+        };
+
+        var overlays = {
+            "WMS Layer": wmsLayer
+        };
+
+        L.control.layers(baseMaps, overlays).addTo(map);
+
+        // Kontrollo mundësinë për kalimin midis hartave
+        osmLayer.addTo(map);  // Harta fillestare është OpenStreetMap
+		
 
         // Geocoder për kërkim adresash
         L.Control.geocoder({
