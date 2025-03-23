@@ -1,53 +1,179 @@
-<!-- webgis_app/templates/webgis_app/index.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sq">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Index Page with Leaflet Map and Search</title>
-
-    <!-- Lidhja për CSS-in e Leaflet -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <!-- Lidhja për CSS-in e Geocoder (Leaflet Control Geocoder) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <title>Harta GIS</title>
     
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+
     <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
         #map {
-            height: 400px;
+            height: 100vh;
             width: 100%;
+        }
+        #toggle-form {
+            position: absolute;
+            top: 200px;
+            left: 10px;
+            z-index: 1000;
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #toggle-form:hover {
+            background: #0056b3;
+        }
+        #form-container {
+            display: none;
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            width: 250px;
         }
     </style>
 </head>
 <body>
-    <h1>Welcome to the Homepage!</h1>
-    <p>This is a simple index page with Leaflet map and search function below:</p>
-    
-    <!-- Div që mban hartën -->
+    <button id="toggle-form">Shto Pikë</button>
+
+    <div id="form-container">
+        <h3>Shto një Pikë</h3>
+        <label>Emri:</label>
+        <input type="text" id="location-name">
+        <label>Qyteti:</label>
+        <input type="text" id="location-city">
+        <label>Dega:</label>
+        <input type="text" id="location-branch">
+        <button onclick="savePoint()">Ruaj</button>
+        <button id="close-form" onclick="closeForm()">Mbyll</button>
+    </div>
+
     <div id="map"></div>
 
-    <!-- Shto JavaScript për Leaflet dhe Geocoder -->
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <!-- Shto JavaScript për Geocoder -->
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-    
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
     <script>
-        // Krijo një hartë me Leaflet
-        var map = L.map('map').setView([51.505, -0.09], 13);  // Qendra e hartës dhe shkalla e zmadhimit
+        var map = L.map('map').setView([41.3275, 19.8189], 13); // Tirana
 
-        // Shto shtresën OpenStreetMap në hartë
+        // Shto OpenStreetMap TileLayer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // Shto mundësinë e kërkimit për adresat dhe rrugët
+        // Geocoder për kërkim adresash
         L.Control.geocoder({
-            collapsed: false  // Kjo i bën kërkimin të shfaqet gjithmonë
+            defaultMarkGeocode: false
+        }).on('markgeocode', function(e) {
+            var latlng = e.geocode.center;
+            L.marker(latlng).addTo(map)
+                .bindPopup(e.geocode.name)
+                .openPopup();
+            map.setView(latlng, 15);
         }).addTo(map);
 
-        // Kjo është për të vendosur një shenjë për koordinatat fillestare
-        L.marker([51.505, -0.09]).addTo(map)
-            .bindPopup('A sample marker')
-            .openPopup();
+        // Cluster për pikat
+        var markers = L.markerClusterGroup();
+        map.addLayer(markers);
+
+        // Funksioni për të ngarkuar pikat vetëm për zonën aktuale të hartës
+        function loadPoints() {
+            var bounds = map.getBounds();
+            var url = `/api/locations/?minlat=${bounds.getSouth()}&maxlat=${bounds.getNorth()}&minlng=${bounds.getWest()}&maxlng=${bounds.getEast()}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    markers.clearLayers();  // Pastron pikat e mëparshme
+                    data.features.forEach(function(feature) {
+                        var marker = L.marker([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
+                        marker.bindPopup(`${feature.properties.name}<br>Qyteti: ${feature.properties.city}<br>Dega: ${feature.properties.branch}`);
+                        markers.addLayer(marker);
+                    });
+                })
+                .catch(error => console.error("Error loading GeoJSON:", error));
+        }
+
+        // Ngarko pikat kur lëvizet harta
+        map.on('moveend', loadPoints);
+        loadPoints();
+
+        // Shto pikë të re me formën
+        var newMarker;
+        document.getElementById('toggle-form').addEventListener('click', function() {
+            var form = document.getElementById('form-container');
+            form.style.display = (form.style.display === 'none' || form.style.display === '') ? 'block' : 'none';
+        });
+
+        map.on('click', function(e) {
+            if (newMarker) map.removeLayer(newMarker);
+            newMarker = L.marker(e.latlng).addTo(map);
+            document.getElementById('form-container').style.display = 'block';
+            newMarker.lat = e.latlng.lat;
+            newMarker.lng = e.latlng.lng;
+        });
+
+        function closeForm() {
+            document.getElementById('form-container').style.display = 'none';
+            if (newMarker) map.removeLayer(newMarker);
+        }
+
+        function savePoint() {
+            var name = document.getElementById('location-name').value;
+            var city = document.getElementById('location-city').value;
+            var branch = document.getElementById('location-branch').value;
+            if (!name || !city || !branch) {
+                alert("Ju lutem plotësoni të gjitha fushat!");
+                return;
+            }
+
+            fetch('/api/add_location/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    city: city,
+                    branch: branch,
+                    latitude: newMarker.lat,
+                    longitude: newMarker.lng
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    alert("Pika u ruajt!");
+                    location.reload();
+                } else {
+                    alert("Gabim: " + data.message);
+                }
+            })
+            .catch(error => console.error("Gabim:", error));
+
+            closeForm();
+        }
     </script>
 </body>
 </html>

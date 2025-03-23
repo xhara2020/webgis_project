@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyrje</title>
+</head>
+<body>
+    <h2>Kyçu për të hyrë në WebGIS</h2>
+    <form method="post">
+        {% csrf_token %}
+        <label>Përdoruesi:</label>
+        <input type="text" name="username" required>
+        <br>
+        <label>Fjalëkalimi:</label>
+        <input type="password" name="password" required>
+        <br>
+        <button type="submit">Kyçu</button>
+    </form>
+</body>
+</html>
