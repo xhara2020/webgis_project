@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harta me Cluster, Kërkim dhe Fshirje</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Marker Cluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <!-- Leaflet Search CSS -->
+    <link rel="stylesheet" href="https://opengeo.tech/maps/leaflet-search/src/leaflet-search.css" />
+
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { height: 100vh; }
+        .delete-btn {
+            background: red;
+            color: white;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+            margin-top: 5px;
+            display: block;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+	
+	<nav>
+        {% if user.is_authenticated %}
+            <p>Përshëndetje, {{ user.username }}!</p>
+            <a href="{% url 'logout' %}">Dil (Logout)</a>
+        {% else %}
+            <a href="{% url 'login' %}">Hyr (Login)</a>
+        {% endif %}
+		<p>
+		<a href="{% url 'index_view' %}" target="_blank">Shto Pike</a>
+    </nav>
+	
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Marker Cluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <!-- Leaflet Search JS -->
+    <script src="https://opengeo.tech/maps/leaflet-search/src/leaflet-search.js"></script>
+
+    <script>
+        // 1️⃣ Krijo hartën
+        var map = L.map('map').setView([41.3275, 19.8189], 7);  // Qendra në Shqipëri
+
+        // 2️⃣ Shto bazën e hartës nga OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // 3️⃣ Krijo grupin e cluster për markerat
+        var markers = L.markerClusterGroup();
+
+        // 4️⃣ Merr të dhënat nga API
+        fetch('/api/locations/')  // API e GeoJSON
+            .then(response => response.json())
+            .then(data => {
+                var geoJsonLayer = L.geoJson(data, {
+                    pointToLayer: function (feature, latlng) {
+                        return L.marker(latlng);
+                    },
+                    onEachFeature: function (feature, layer) {
+                        if (feature.properties && feature.properties.name) {
+                            var locationId = feature.properties.id;  // ID e pikës
+                            var popupContent = ` 
+                                <h4>${feature.properties.name}</h4>
+                                <button class="delete-btn" onclick="deleteMarker(${locationId})">
+                                    Fshi këtë pikë
+                                </button>
+                            `;
+                            layer.bindPopup(popupContent);
+                        }
+                    }
+                });
+
+                markers.addLayer(geoJsonLayer);
+                map.addLayer(markers);
+            })
+            .catch(error => console.error("❌ Gabim gjatë ngarkimit të GeoJSON:", error));
+
+        // 5️⃣ Shto Search Control
+        var searchControl = new L.Control.Search({
+            layer: markers,  // Kërkimi bëhet brenda grupit të cluster
+            propertyName: 'name',
+            marker: false,
+            moveToLocation: function (latlng, title, map) {
+                map.setView(latlng, 20);
+            }
+        });
+
+        // 6️⃣ Stilizo markerin e gjetur
+        searchControl.on('search:locationfound', function (e) {
+            if (e.layer.setStyle) {
+                e.layer.setStyle({ fillColor: '#3f0', color: '#0f0' });
+            } else if (e.layer instanceof L.Marker) {
+                e.layer.setIcon(new L.Icon({
+                    iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32],
+                    popupAnchor: [0, -32]
+                }));
+            }
+            if (e.layer._popup) {
+                e.layer.openPopup();
+            }
+        });
+
+        map.addControl(searchControl);  // Shto Search Control në hartë
+
+        // 7️⃣ Funksioni për të fshirë një pikë
+      // Funksioni për të fshirë një pikë duke përdorur location_name
+		function deleteMarker(locationName) {
+			fetch(`/api/locations/${locationName}/`, {
+				method: 'DELETE',
+				headers: {
+					"Content-Type": "application/json"
+				}
+			})
+			.then(response => {
+				if (response.ok) {
+					alert("Pika u fshi me sukses!");
+					// Pasi të fshihet, mund të hiqni markerin nga harta
+				} else {
+					alert("Gabim gjatë fshirjes!");
+				}
+			})
+			.catch(error => console.error("Gabim:", error));
+}
+
+
+
+
+    </script>
+
+</body>
+</html>

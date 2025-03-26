@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
 
+
+
     <style>
         body, html {
             margin: 0;
@@ -60,6 +62,8 @@
         {% else %}
             <a href="{% url 'login' %}">Hyr (Login)</a>
         {% endif %}
+		<p>
+		<a href="{% url 'geojson_view' %}" target="_blank">Kerko Pike</a>
     </nav>
 
     <button id="toggle-form">Shto Pikë</button>
@@ -82,9 +86,18 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+	
+	
+
+
 
     <script>
          var map = L.map('map').setView([41.3275, 19.8189], 13); // Tirana
+		 
+		 var container = L.DomUtil.get('map');
+		if (container != null) {
+			container._leaflet_id = null;
+		}
 
         // Shto OpenStreetMap TileLayer
         var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -132,31 +145,35 @@
         }).addTo(map);
 
         // Cluster për pikat
+		
         var markers = L.markerClusterGroup();
         map.addLayer(markers);
 
         // Funksioni për të ngarkuar pikat vetëm për zonën aktuale të hartës
         function loadPoints() {
-            var bounds = map.getBounds();
-            var url = `/api/locations/?minlat=${bounds.getSouth()}&maxlat=${bounds.getNorth()}&minlng=${bounds.getWest()}&maxlng=${bounds.getEast()}`;
+		var bounds = map.getBounds();
+		var url = `/api/locations/?minlat=${bounds.getSouth()}&maxlat=${bounds.getNorth()}&minlng=${bounds.getWest()}&maxlng=${bounds.getEast()}`;
 
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    markers.clearLayers();  // Pastron pikat e mëparshme
-                    data.features.forEach(function(feature) {
-                        var marker = L.marker([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
-                        marker.bindPopup(`${feature.properties.name}<br>Qyteti: ${feature.properties.city}<br>Dega: ${feature.properties.branch}`);
-                        markers.addLayer(marker);
-                    });
-                })
-                .catch(error => console.error("Error loading GeoJSON:", error));
-        }
+		fetch(url)
+			.then(response => response.json())
+			.then(data => {
+				markers.clearLayers();
+				data.features.forEach(function(feature) {
+					var marker = L.marker([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
+					marker.bindPopup(`${feature.properties.name}<br>Qyteti: ${feature.properties.city}<br>Dega: ${feature.properties.branch}`);
+					markers.addLayer(marker);
+				});
+
+			})
+			.catch(error => console.error("Gabim gjatë ngarkimit të GeoJSON:", error));
+		}
+
 
         // Ngarko pikat kur lëvizet harta
         map.on('moveend', loadPoints);
         loadPoints();
-
+			
+	
         // Shto pikë të re me formën
         var newMarker;
         document.getElementById('toggle-form').addEventListener('click', function() {
@@ -213,6 +230,14 @@
 
             closeForm();
         }
+		
+	
+		
+		
+		
+
+
+
     </script>
 </body>
 </html>
