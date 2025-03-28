@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harta me Cluster, Kërkim dhe Fshirje</title>
+    <title>Harta me Cluster, Kërkim </title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -12,33 +12,41 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
     <!-- Leaflet Search CSS -->
     <link rel="stylesheet" href="https://opengeo.tech/maps/leaflet-search/src/leaflet-search.css" />
+    
+    <!-- Bootstrap CSS (Përfshirë Bootstrap nga CDN) -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
         body { margin: 0; padding: 0; }
         #map { height: 100vh; }
-        .delete-btn {
-            background: red;
-            color: white;
-            border: none;
-            padding: 5px;
-            cursor: pointer;
-            margin-top: 5px;
-            display: block;
-            width: 100%;
-        }
     </style>
 </head>
 <body>
 	
-	<nav>
-        {% if user.is_authenticated %}
-            <p>Përshëndetje, {{ user.username }}!</p>
-            <a href="{% url 'logout' %}">Dil (Logout)</a>
-        {% else %}
-            <a href="{% url 'login' %}">Hyr (Login)</a>
-        {% endif %}
-		<p>
-		<a href="{% url 'index_view' %}" target="_blank">Shto Pike</a>
+	<nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Harta GIS</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <p class="nav-link">Përshëndetje, {{ user.username }}!</p>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Dil (Logout)</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">Hyr (Login)</a>
+                    </li>
+                {% endif %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'index_view' %}" target="_blank">Shto Pike</a>
+                </li>
+            </ul>
+        </div>
     </nav>
 	
     <div id="map"></div>
@@ -49,6 +57,11 @@
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
     <!-- Leaflet Search JS -->
     <script src="https://opengeo.tech/maps/leaflet-search/src/leaflet-search.js"></script>
+
+    <!-- Bootstrap JS (Përfshirë Bootstrap nga CDN) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
     <script>
         // 1️⃣ Krijo hartën
@@ -72,12 +85,8 @@
                     },
                     onEachFeature: function (feature, layer) {
                         if (feature.properties && feature.properties.name) {
-                            var locationId = feature.properties.id;  // ID e pikës
                             var popupContent = ` 
                                 <h4>${feature.properties.name}</h4>
-                                <button class="delete-btn" onclick="deleteMarker(${locationId})">
-                                    Fshi këtë pikë
-                                </button>
                             `;
                             layer.bindPopup(popupContent);
                         }
@@ -117,29 +126,6 @@
         });
 
         map.addControl(searchControl);  // Shto Search Control në hartë
-
-        // 7️⃣ Funksioni për të fshirë një pikë
-      // Funksioni për të fshirë një pikë duke përdorur location_name
-		function deleteMarker(locationName) {
-			fetch(`/api/locations/${locationName}/`, {
-				method: 'DELETE',
-				headers: {
-					"Content-Type": "application/json"
-				}
-			})
-			.then(response => {
-				if (response.ok) {
-					alert("Pika u fshi me sukses!");
-					// Pasi të fshihet, mund të hiqni markerin nga harta
-				} else {
-					alert("Gabim gjatë fshirjes!");
-				}
-			})
-			.catch(error => console.error("Gabim:", error));
-}
-
-
-
 
     </script>
 

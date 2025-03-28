@@ -10,6 +10,11 @@ def index_view(request):
 
 def geojson_view(request):
     return render(request, 'webgis_app/geojson-layer.html')  # Kthe template 'index.html'
+    
+    
+def map_view(request):
+    """ Renderon faqen kryesore me hartën Leaflet. """
+    return render(request, 'webgis_app/draw.html')
 
     
 from django.http import JsonResponse
@@ -20,9 +25,16 @@ import json
 
     
 
+from django.http import JsonResponse
+from .models import Location
+
 def locations_geojson(request):
-    #locations = Location.objects.all()
-    locations = Location.objects.filter(user=request.user)  # Filtrim sipas userit
+    # Kontrollo nëse përdoruesi është superuser
+    if request.user.is_superuser:
+        locations = Location.objects.all()  # Përdoruesi superuser merr të gjitha të dhënat
+    else:
+        locations = Location.objects.filter(user=request.user)  # Përdoruesit e tjerë vetëm të dhënat e lidhura me ta
+
     geojson_data = {
         "type": "FeatureCollection",
         "features": []
@@ -43,6 +55,40 @@ def locations_geojson(request):
         })
 
     return JsonResponse(geojson_data)
+
+
+
+from django.http import JsonResponse
+from .models import Branches
+
+def branches_geojson(request):
+    # Kontrollo nëse përdoruesi është superuser
+    if request.user.is_superuser:
+        branches = Branches.objects.all()  # Përdoruesi superuser merr të gjitha të dhënat
+    else:
+        branches = Branches.objects.filter(user=request.user)  # Përdoruesit e tjerë vetëm të dhënat e lidhura me ta
+
+    geojson_data = {
+        "type": "FeatureCollection",
+        "features": []
+    }
+
+    for branch in branches:
+        geojson_data["features"].append({
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [branch.point.x, branch.point.y]  # Përdor koordinatat nga fushat e pikave
+            },
+            "properties": {
+                "name": branch.name,  # Emri i branch-it
+                "city": branch.city,  # Qyteti
+                "user_name": branch.user_name  # Emri i përdoruesit
+            }
+        })
+
+    return JsonResponse(geojson_data)
+
     
     
 @csrf_exempt
@@ -88,6 +134,10 @@ from django.http import JsonResponse
 from .models import Location
 from django.views.decorators.csrf import csrf_exempt
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Location
+
 @csrf_exempt
 def location_by_name(request, location_name):
     if request.method == 'GET':  # Sigurohuni që po pranon vetëm GET
@@ -116,22 +166,6 @@ def location_by_name(request, location_name):
         except Location.DoesNotExist:
             return JsonResponse({"error": "Pika me emrin e dhënë nuk u gjet"}, status=404)
     
-   
-    elif request.method == 'DELETE':
-        print(f"Po përpiqemi të fshijmë pikën me emrin: {location_name}")  # Mesazh debug
-        try:
-            location = Location.objects.get(name=location_name)
-            location.delete()
-            print(f"Pika me emrin {location_name} u fshi me sukses.")  # Mesazh për sukses
-            return JsonResponse({"message": "Pika u fshi me sukses"}, status=200)
-        except Location.DoesNotExist:
-            print(f"Pika me emrin {location_name} nuk u gjet.")  # Mesazh për gabim
-            return JsonResponse({"error": "Pika me emrin e dhënë nuk u gjet"}, status=404)
-        except Exception as e:
-            print(f"Gabim gjatë fshirjes: {e}")  # Mesazh për çdo gabim të mundshëm
-            return JsonResponse({"error": f"Gabim gjatë fshirjes: {e}"}, status=500)
-    
     return JsonResponse({"error": "Metoda jo e lejuar"}, status=405)
-
 
 

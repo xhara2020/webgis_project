@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Harta GIS</title>
-    
+
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
-
-
 
     <style>
         body, html {
@@ -55,29 +56,48 @@
 </head>
 <body>
 
-	<nav>
-        {% if user.is_authenticated %}
-            <p>Përshëndetje, {{ user.username }}!</p>
-            <a href="{% url 'logout' %}">Dil (Logout)</a>
-        {% else %}
-            <a href="{% url 'login' %}">Hyr (Login)</a>
-        {% endif %}
-		<p>
-		<a href="{% url 'geojson_view' %}" target="_blank">Kerko Pike</a>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Harta GIS</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <p class="nav-link">Përshëndetje, {{ user.username }}!</p>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Dil (Logout)</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">Hyr (Login)</a>
+                    </li>
+                {% endif %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'geojson_view' %}" target="_blank">Kerko Pike</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" href="{% url 'admin:index' %}" target="_blank">Shko te Admin Panel</a>
+                </li>
+				
+				
+            </ul>
+        </div>
     </nav>
 
-    <button id="toggle-form">Shto Pikë</button>
+    <button id="toggle-form" class="btn btn-primary">Shto Pikë</button>
 
-    <div id="form-container">
-        <h3>Shto një Pikë</h3>
-        <label>Emri:</label>
-        <input type="text" id="location-name">
-        <label>Qyteti:</label>
-        <input type="text" id="location-city">
-        <label>Dega:</label>
-        <input type="text" id="location-branch">
-        <button onclick="savePoint()">Ruaj</button>
-        <button id="close-form" onclick="closeForm()">Mbyll</button>
+    <div id="form-container" class="card shadow-sm">
+        <h3 class="card-header">Shto një Pikë</h3>
+        <div class="card-body">
+            <label for="location-name">Emri:</label>
+            <input type="text" class="form-control mb-2" id="location-name">
+            <label for="location-city">Qyteti:</label>
+            <input type="text" class="form-control mb-2" id="location-city">
+            <label for="location-branch">Dega:</label>
+            <input type="text" class="form-control mb-2" id="location-branch">
+            <button class="btn btn-success mt-2" onclick="savePoint()">Ruaj</button>
+            <button id="close-form" class="btn btn-secondary mt-2" onclick="closeForm()">Mbyll</button>
+        </div>
     </div>
 
     <div id="map"></div>
@@ -86,18 +106,19 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-	
-	
-
-
+    
+    <!-- Bootstrap JS and dependencies (jQuery, Popper.js) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
     <script>
-         var map = L.map('map').setView([41.3275, 19.8189], 13); // Tirana
-		 
-		 var container = L.DomUtil.get('map');
-		if (container != null) {
-			container._leaflet_id = null;
-		}
+        var map = L.map('map').setView([41.3275, 19.8189], 13); // Tirana
+        
+        var container = L.DomUtil.get('map');
+        if (container != null) {
+            container._leaflet_id = null;
+        }
 
         // Shto OpenStreetMap TileLayer
         var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -111,13 +132,12 @@
 
         // Shto WMS Layer nga URL-ja e dhënë
         var wmsLayer = L.tileLayer.wms("https://geoportal.asig.gov.al/service/adresar/ows?", {
-            layers: 'adr_numertim', // Përdorim emrin e saktë të layer-it që ofron shërbimi
+            layers: 'adr_numertim',
             format: 'image/png',
             transparent: true,
             attribution: "Shërbimi i Hartës WMS"
         });
 
-        // Shto kontrollin për ndërrimin midis layer-ëve
         var baseMaps = {
             "OpenStreetMap": osmLayer,
             "Satelit": satelliteLayer
@@ -128,10 +148,7 @@
         };
 
         L.control.layers(baseMaps, overlays).addTo(map);
-
-        // Kontrollo mundësinë për kalimin midis hartave
-        osmLayer.addTo(map);  // Harta fillestare është OpenStreetMap
-		
+        osmLayer.addTo(map);
 
         // Geocoder për kërkim adresash
         L.Control.geocoder({
@@ -145,35 +162,56 @@
         }).addTo(map);
 
         // Cluster për pikat
-		
         var markers = L.markerClusterGroup();
         map.addLayer(markers);
 
-        // Funksioni për të ngarkuar pikat vetëm për zonën aktuale të hartës
-        function loadPoints() {
-		var bounds = map.getBounds();
-		var url = `/api/locations/?minlat=${bounds.getSouth()}&maxlat=${bounds.getNorth()}&minlng=${bounds.getWest()}&maxlng=${bounds.getEast()}`;
+        function loadPointsAndBranches() {
+			// Ngarko pikat
+			const pointsUrl = '/api/locations/?minlat=' + map.getBounds().getSouth() + '&maxlat=' + map.getBounds().getNorth() + '&minlng=' + map.getBounds().getWest() + '&maxlng=' + map.getBounds().getEast();
+			const branchesUrl = '/branches_geojson/';
 
-		fetch(url)
-			.then(response => response.json())
-			.then(data => {
-				markers.clearLayers();
-				data.features.forEach(function(feature) {
+			// Përdorim Promise.all për ngarkimin paralel
+			Promise.all([
+				fetch(pointsUrl).then(response => response.json()), // Kërkesa për pikat
+				fetch(branchesUrl).then(response => response.json()) // Kërkesa për branch-et
+			])
+			.then(([pointsData, branchesData]) => {
+				markers.clearLayers();  // Përsëri pastrojmë markerat
+
+				// Ngarkojmë pikat
+				pointsData.features.forEach(function(feature) {
 					var marker = L.marker([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
 					marker.bindPopup(`${feature.properties.name}<br>Qyteti: ${feature.properties.city}<br>Dega: ${feature.properties.branch}`);
 					markers.addLayer(marker);
 				});
 
+				// Ngarkojmë branch-et
+				branchesData.features.forEach(function(feature) {
+					var marker = L.marker([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], {
+						icon: L.icon({
+							iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png', // Pikë e jeshile
+							iconSize: [25, 41],
+							iconAnchor: [12, 41],
+							popupAnchor: [1, -34],
+							shadowSize: [41, 41]
+						})
+					});
+					marker.bindPopup(`
+						<b>${feature.properties.name}</b><br>
+						Qyteti: ${feature.properties.city}<br>
+						Përdorues: ${feature.properties.user_name}
+					`);
+					markers.addLayer(marker);
+				});
 			})
-			.catch(error => console.error("Gabim gjatë ngarkimit të GeoJSON:", error));
+			.catch(error => console.error("Gabim gjatë ngarkimit të të dhënave:", error));
 		}
 
+		// Ngarko pikat dhe branch-et kur lëviz harta
+		map.on('moveend', loadPointsAndBranches);
+		loadPointsAndBranches();  // Ngarko të dhënat fillestare kur faqja ngarkohet
 
-        // Ngarko pikat kur lëvizet harta
-        map.on('moveend', loadPoints);
-        loadPoints();
-			
-	
+
         // Shto pikë të re me formën
         var newMarker;
         document.getElementById('toggle-form').addEventListener('click', function() {
@@ -231,12 +269,7 @@
             closeForm();
         }
 		
-	
 		
-		
-		
-
-
 
     </script>
 </body>

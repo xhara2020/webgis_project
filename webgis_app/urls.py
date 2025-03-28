@@ -6,10 +6,12 @@ from .views import locations_geojson
 from .views import add_location
 from .views import custom_logout
 from .views import geojson_view
+from .views import map_view
 
 urlpatterns = [
     path('', views.index_view, name='index_view'),  # URL për faqen kryesore
     path('geojson/', views.geojson_view, name='geojson_view'),  # URL për faqen GeoJSON
+    path('branches_geojson/', views.branches_geojson, name='branches_geojson'),
     path('api/locations/', locations_geojson, name='locations_geojson'),
     path('api/add_location/', add_location, name='add_location'),
     path('accounts/login/', auth_views.LoginView.as_view(), name='login'),  # Faqja e login-it
