@@ -25,25 +25,28 @@
             height: 100vh;
             width: 100%;
         }
-        #toggle-form {
+        #toggle-form, #toggle-branch {
             position: absolute;
-            top: 200px;
             left: 10px;
             z-index: 1000;
-            background: #007bff;
             color: white;
             border: none;
             padding: 10px;
             border-radius: 5px;
             cursor: pointer;
         }
-        #toggle-form:hover {
-            background: #0056b3;
+        #toggle-form {
+            top: 200px;
+            background: #007bff;
         }
-        #form-container {
+        #toggle-branch {
+            top: 270px;
+            background: #ffc107;
+            color: black;
+        }
+        #form-container, #form-branch {
             display: none;
             position: absolute;
-            top: 200px;
             left: 10px;
             background: rgba(255, 255, 255, 0.95);
             padding: 15px;
@@ -52,225 +55,250 @@
             z-index: 1000;
             width: 250px;
         }
+        #form-container { top: 320px; }
+        #form-branch { top: 500px; }
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">Harta GIS</a>
-        <div class="collapse navbar-collapse">
-            <ul class="navbar-nav mr-auto">
-                {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <p class="nav-link">Përshëndetje, {{ user.username }}!</p>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'logout' %}">Dil (Logout)</a>
-                    </li>
-                {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'login' %}">Hyr (Login)</a>
-                    </li>
-                {% endif %}
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">Harta GIS</a>
+    <div class="collapse navbar-collapse">
+        <ul class="navbar-nav mr-auto">
+            {% if user.is_authenticated %}
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'geojson_view' %}" target="_blank">Kerko Pike</a>
-				</li>
-				<li class="nav-item">
-					<a class="nav-link" href="{% url 'admin:index' %}" target="_blank">Shko te Admin Panel</a>
+                    <p class="nav-link">Përshëndetje, {{ user.username }}!</p>
                 </li>
-				
-				
-            </ul>
-        </div>
-    </nav>
-
-    <button id="toggle-form" class="btn btn-primary">Shto Pikë</button>
-
-    <div id="form-container" class="card shadow-sm">
-        <h3 class="card-header">Shto një Pikë</h3>
-        <div class="card-body">
-            <label for="location-name">Emri:</label>
-            <input type="text" class="form-control mb-2" id="location-name">
-            <label for="location-city">Qyteti:</label>
-            <input type="text" class="form-control mb-2" id="location-city">
-            <label for="location-branch">Dega:</label>
-            <input type="text" class="form-control mb-2" id="location-branch">
-            <button class="btn btn-success mt-2" onclick="savePoint()">Ruaj</button>
-            <button id="close-form" class="btn btn-secondary mt-2" onclick="closeForm()">Mbyll</button>
-        </div>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'logout' %}">Dil (Logout)</a>
+                </li>
+            {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'login' %}">Hyr (Login)</a>
+                </li>
+            {% endif %}
+        </ul>
     </div>
+</nav>
 
-    <div id="map"></div>
+<button id="toggle-form" class="btn btn-primary">Shto Pikë</button>
+<button id="toggle-branch" class="btn btn-warning">Shto Degë</button>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-    
-    <!-- Bootstrap JS and dependencies (jQuery, Popper.js) -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<div id="form-container" class="card shadow-sm">
+    <h3 class="card-header">Shto Pikë</h3>
+    <div class="card-body">
+        <label for="location-name">Emri:</label>
+        <input type="text" class="form-control mb-2" id="location-name">
+        <label for="location-city">Qyteti:</label>
+        <input type="text" class="form-control mb-2" id="location-city">
+        <label for="location-branch">Dega:</label>
+        <input type="text" class="form-control mb-2" id="location-branch">
+        <label for="location-type">Tipi i klientit:</label>
+        <select id="location-type" class="form-control mb-2">
+            <option value="">Zgjidh tipin</option>
+            <option value="biznes">Biznes</option>
+            <option value="individ">Individ</option>
+        </select>
+        <button class="btn btn-success mt-2" onclick="savePoint()">Ruaj</button>
+        <button class="btn btn-secondary mt-2" onclick="closeForm()">Mbyll</button>
+    </div>
+</div>
 
-    <script>
-        var map = L.map('map').setView([41.3275, 19.8189], 13); // Tirana
-        
-        var container = L.DomUtil.get('map');
-        if (container != null) {
-            container._leaflet_id = null;
-        }
+<div id="form-branch" class="card shadow-sm">
+    <h3 class="card-header">Shto Degë</h3>
+    <div class="card-body">
+        <label for="branch-name">Emri Degës:</label>
+        <input type="text" class="form-control mb-2" id="branch-name">
+        <label for="branch-city">Qyteti:</label>
+        <input type="text" class="form-control mb-2" id="branch-city">
+        <button class="btn btn-success mt-2" onclick="saveBranch()">Ruaj Degë</button>
+        <button class="btn btn-secondary mt-2" onclick="closeBranchForm()">Mbyll</button>
+    </div>
+</div>
 
-        // Shto OpenStreetMap TileLayer
-        var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
+<!-- Legjenda -->
+<div class="legend">
+    <strong>Legjenda:</strong><br>
+    <img src="https://maps.google.com/mapfiles/ms/icons/red-dot.png"> Biznes<br>
+    <img src="https://maps.google.com/mapfiles/ms/icons/blue-dot.png"> Individ<br>
+    <img src="https://maps.google.com/mapfiles/ms/icons/green-dot.png"> Degë
+</div>
+
+<div id="map"></div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script>
+    var map = L.map('map').setView([41.3275, 19.8189], 13);
+    var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+    var wmsLayer = L.tileLayer.wms("https://geoportal.asig.gov.al/service/adresar/ows?", {
+        layers: 'adr_numertim', format: 'image/png', transparent: true
+    });
+
+    var baseMaps = { "OpenStreetMap": osmLayer, "Satelit": satelliteLayer };
+    var overlays = { "WMS Layer": wmsLayer };
+    L.control.layers(baseMaps, overlays).addTo(map);
+
+    var markers = L.markerClusterGroup();
+    var branchesLayer = L.layerGroup().addTo(map);
+    map.addLayer(markers);
+
+    L.Control.geocoder().addTo(map);
+
+    function loadPointsAndBranches() {
+        Promise.all([
+            fetch('/api/locations/').then(res => res.json()),
+            fetch('/branches_geojson/').then(res => res.json())
+        ]).then(([locations, branches]) => {
+            markers.clearLayers();
+            branchesLayer.clearLayers();
+
+            locations.features.forEach(f => {
+                var iconUrl = f.properties.type_client === 'biznes'
+                    ? 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+                    : 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+                var icon = L.icon({ iconUrl: iconUrl, iconSize: [25, 41], iconAnchor: [12, 41] });
+                var marker = L.marker([f.geometry.coordinates[1], f.geometry.coordinates[0]], { icon });
+                marker.bindPopup(`<b>${f.properties.name}</b><br>Qyteti: ${f.properties.city}<br>Dega: ${f.properties.branch}<br>Tipi: ${f.properties.type_client}`);
+                markers.addLayer(marker);
+            });
+
+            branches.features.forEach(f => {
+                var branchMarker = L.marker([f.geometry.coordinates[1], f.geometry.coordinates[0]], {
+                    icon: L.icon({
+                        iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+                        iconSize: [25, 41], iconAnchor: [12, 41]
+                    })
+                });
+                branchMarker.bindPopup(`<b>${f.properties.name}</b><br>Qyteti: ${f.properties.city}<br>Përdorues: ${f.properties.user_name}`);
+                branchesLayer.addLayer(branchMarker);
+            });
         });
+    }
 
-        // Shto Esri Satellite Imagery TileLayer
-        var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '&copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community'
-        });
+    map.on('moveend', loadPointsAndBranches);
+    loadPointsAndBranches();
 
-        // Shto WMS Layer nga URL-ja e dhënë
-        var wmsLayer = L.tileLayer.wms("https://geoportal.asig.gov.al/service/adresar/ows?", {
-            layers: 'adr_numertim',
-            format: 'image/png',
-            transparent: true,
-            attribution: "Shërbimi i Hartës WMS"
-        });
-
-        var baseMaps = {
-            "OpenStreetMap": osmLayer,
-            "Satelit": satelliteLayer
-        };
-
-        var overlays = {
-            "WMS Layer": wmsLayer
-        };
-
-        L.control.layers(baseMaps, overlays).addTo(map);
-        osmLayer.addTo(map);
-
-        // Geocoder për kërkim adresash
-        L.Control.geocoder({
-            defaultMarkGeocode: false
-        }).on('markgeocode', function(e) {
-            var latlng = e.geocode.center;
-            L.marker(latlng).addTo(map)
-                .bindPopup(e.geocode.name)
-                .openPopup();
-            map.setView(latlng, 15);
-        }).addTo(map);
-
-        // Cluster për pikat
-        var markers = L.markerClusterGroup();
-        map.addLayer(markers);
-
-        function loadPointsAndBranches() {
-			// Ngarko pikat
-			const pointsUrl = '/api/locations/?minlat=' + map.getBounds().getSouth() + '&maxlat=' + map.getBounds().getNorth() + '&minlng=' + map.getBounds().getWest() + '&maxlng=' + map.getBounds().getEast();
-			const branchesUrl = '/branches_geojson/';
-
-			// Përdorim Promise.all për ngarkimin paralel
-			Promise.all([
-				fetch(pointsUrl).then(response => response.json()), // Kërkesa për pikat
-				fetch(branchesUrl).then(response => response.json()) // Kërkesa për branch-et
-			])
-			.then(([pointsData, branchesData]) => {
-				markers.clearLayers();  // Përsëri pastrojmë markerat
-
-				// Ngarkojmë pikat
-				pointsData.features.forEach(function(feature) {
-					var marker = L.marker([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
-					marker.bindPopup(`${feature.properties.name}<br>Qyteti: ${feature.properties.city}<br>Dega: ${feature.properties.branch}`);
-					markers.addLayer(marker);
-				});
-
-				// Ngarkojmë branch-et
-				branchesData.features.forEach(function(feature) {
-					var marker = L.marker([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], {
-						icon: L.icon({
-							iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png', // Pikë e jeshile
-							iconSize: [25, 41],
-							iconAnchor: [12, 41],
-							popupAnchor: [1, -34],
-							shadowSize: [41, 41]
-						})
-					});
-					marker.bindPopup(`
-						<b>${feature.properties.name}</b><br>
-						Qyteti: ${feature.properties.city}<br>
-						Përdorues: ${feature.properties.user_name}
-					`);
-					markers.addLayer(marker);
-				});
-			})
-			.catch(error => console.error("Gabim gjatë ngarkimit të të dhënave:", error));
-		}
-
-		// Ngarko pikat dhe branch-et kur lëviz harta
-		map.on('moveend', loadPointsAndBranches);
-		loadPointsAndBranches();  // Ngarko të dhënat fillestare kur faqja ngarkohet
-
-
-        // Shto pikë të re me formën
-        var newMarker;
-        document.getElementById('toggle-form').addEventListener('click', function() {
-            var form = document.getElementById('form-container');
-            form.style.display = (form.style.display === 'none' || form.style.display === '') ? 'block' : 'none';
-        });
-
-        map.on('click', function(e) {
+    var newMarker;
+    document.getElementById('toggle-form').addEventListener('click', function () {
+        document.getElementById('form-container').style.display = 'block';
+        map.once('click', function (e) {
             if (newMarker) map.removeLayer(newMarker);
             newMarker = L.marker(e.latlng).addTo(map);
-            document.getElementById('form-container').style.display = 'block';
             newMarker.lat = e.latlng.lat;
             newMarker.lng = e.latlng.lng;
         });
+    });
 
-        function closeForm() {
-            document.getElementById('form-container').style.display = 'none';
-            if (newMarker) map.removeLayer(newMarker);
+    function closeForm() {
+        document.getElementById('form-container').style.display = 'none';
+        if (newMarker) map.removeLayer(newMarker);
+    }
+
+    function savePoint() {
+        var name = document.getElementById('location-name').value;
+        var city = document.getElementById('location-city').value;
+        var branch = document.getElementById('location-branch').value;
+        var type_client = document.getElementById('location-type').value;
+
+        if (!name || !city || !branch || !type_client || !newMarker) {
+            alert("Ju lutem plotësoni të gjitha fushat dhe klikoni në hartë.");
+            return;
         }
 
-        function savePoint() {
-            var name = document.getElementById('location-name').value;
-            var city = document.getElementById('location-city').value;
-            var branch = document.getElementById('location-branch').value;
-            if (!name || !city || !branch) {
-                alert("Ju lutem plotësoni të gjitha fushat!");
-                return;
+        fetch('/api/add_location/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                name, city, branch, type_client,
+                latitude: newMarker.lat,
+                longitude: newMarker.lng
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === "success") {
+                alert("Pika u ruajt!");
+                location.reload();
+            } else {
+                alert("Gabim: " + data.message);
             }
+        });
 
-            fetch('/api/add_location/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({
-                    name: name,
-                    city: city,
-                    branch: branch,
-                    latitude: newMarker.lat,
-                    longitude: newMarker.lng
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === "success") {
-                    alert("Pika u ruajt!");
-                    location.reload();
-                } else {
-                    alert("Gabim: " + data.message);
-                }
-            })
-            .catch(error => console.error("Gabim:", error));
+        closeForm();
+    }
 
-            closeForm();
+    var newBranchMarker;
+    document.getElementById('toggle-branch').addEventListener('click', function () {
+        document.getElementById('form-branch').style.display = 'block';
+        map.once('click', function (e) {
+            if (newBranchMarker) map.removeLayer(newBranchMarker);
+            newBranchMarker = L.marker(e.latlng).addTo(map);
+            newBranchMarker.lat = e.latlng.lat;
+            newBranchMarker.lng = e.latlng.lng;
+        });
+    });
+
+    function closeBranchForm() {
+        document.getElementById('form-branch').style.display = 'none';
+        if (newBranchMarker) map.removeLayer(newBranchMarker);
+    }
+
+    function saveBranch() {
+        var name = document.getElementById('branch-name').value;
+        var city = document.getElementById('branch-city').value;
+
+        if (!name || !city || !newBranchMarker) {
+            alert("Ju lutem plotësoni të gjitha fushat dhe klikoni në hartë.");
+            return;
         }
-		
-		
 
-    </script>
+        fetch('/api/add_branch/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                name, city,
+                latitude: newBranchMarker.lat,
+                longitude: newBranchMarker.lng
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === "success") {
+                alert("Dega u ruajt!");
+                location.reload();
+            } else {
+                alert("Gabim: " + data.message);
+            }
+        });
+
+        closeBranchForm();
+    }
+</script>
+
 </body>
 </html>

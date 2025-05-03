@@ -30,11 +30,13 @@ from .models import Location
 
 def locations_geojson(request):
     # Kontrollo nëse përdoruesi është superuser
-    if request.user.is_superuser:
-        locations = Location.objects.all()  # Përdoruesi superuser merr të gjitha të dhënat
-    else:
-        locations = Location.objects.filter(user=request.user)  # Përdoruesit e tjerë vetëm të dhënat e lidhura me ta
-
+    # if request.user.is_superuser:
+        # locations = Location.objects.all()  # Përdoruesi superuser merr të gjitha të dhënat
+    # else:
+        # locations = Location.objects.filter(user=request.user)  # Përdoruesit e tjerë vetëm të dhënat e lidhura me ta
+    
+    locations = Location.objects.all()  # Hiqet filtrimi sipas user-it
+    
     geojson_data = {
         "type": "FeatureCollection",
         "features": []
@@ -50,7 +52,8 @@ def locations_geojson(request):
             "properties": {
                 "name": location.name,
                 "city": location.city,
-                "branch": location.branch
+                "branch": location.branch,
+                "type_client": location.type_client  #E shtojmë për ngjyrat në hartë
             }
         })
 
@@ -63,11 +66,13 @@ from .models import Branches
 
 def branches_geojson(request):
     # Kontrollo nëse përdoruesi është superuser
-    if request.user.is_superuser:
-        branches = Branches.objects.all()  # Përdoruesi superuser merr të gjitha të dhënat
-    else:
-        branches = Branches.objects.filter(user=request.user)  # Përdoruesit e tjerë vetëm të dhënat e lidhura me ta
-
+    # if request.user.is_superuser:
+        # branches = Branches.objects.all()  # Përdoruesi superuser merr të gjitha të dhënat
+    # else:
+        # branches = Branches.objects.filter(user=request.user)  # Përdoruesit e tjerë vetëm të dhënat e lidhura me ta
+    
+    branches = Branches.objects.all()  # Hiqet filtrimi sipas user-it
+    
     geojson_data = {
         "type": "FeatureCollection",
         "features": []
@@ -99,6 +104,7 @@ def add_location(request):
             name = data.get('name')
             city = data.get('city', '')  # Merr qytetin, ose '' nëse mungon
             branch = data.get('branch', '')  # Merr degën, ose '' nëse mungon
+            type_client = data.get('type_client', '')  # ✅ MERR TANI TYPE_CLIENT
             longitude = data.get('longitude')
             latitude = data.get('latitude')
 
@@ -107,6 +113,7 @@ def add_location(request):
                     name=name,
                     city=city,
                     branch=branch,
+                    type_client=type_client,  # ✅ RUAN NE MODEL
                     point=f'POINT({longitude} {latitude})',
                     user=request.user,
                     user_name=request.user.username,  # Ruaj emrin e user-it
@@ -118,6 +125,35 @@ def add_location(request):
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
     
     return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
+
+
+@csrf_exempt
+def add_branch(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            name = data.get('name')
+            city = data.get('city', '')
+            longitude = data.get('longitude')
+            latitude = data.get('latitude')
+
+            if name and longitude and latitude:
+                branch = Branches.objects.create(
+                    name=name,
+                    city=city,
+                    point=f'POINT({longitude} {latitude})',
+                    user=request.user,
+                    user_name=request.user.username,
+                )
+                return JsonResponse({"status": "success", "id": branch.id}, status=201)
+
+            return JsonResponse({"status": "error", "message": "Të dhëna të paplota"}, status=400)
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+    return JsonResponse({"status": "error", "message": "Metodë jo e lejuar"}, status=400)
+
+
 
 
 from django.contrib import messages
