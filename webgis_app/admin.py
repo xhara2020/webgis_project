@@ -9,13 +9,14 @@ from .models import Branches
 # Përdorni LeafletGeoAdmin për shfaqjen në hartë
 @admin.register(Branches)
 class BranchesAdmin(LeafletGeoAdmin):
-    list_display = ('name', 'city', 'user', 'point')  # Të shfaqen disa fusha
+    list_display = ('name', 'city', 'point')  # Të shfaqen disa fusha
     search_fields = ('name', 'city')  # Mund të kërkoni për emër dhe qytet
+    list_filter = ('name', 'city')  # Filtrim sipas qytetit dhe degës
 
 
 
 class MyLocationAdmin(LeafletGeoAdmin):
-    list_display = ('name', 'point')
+    list_display = ('name', 'point','branch','city')
     search_fields = ('name', 'city', 'branch')  # Lejo kërkimin për emrin, qytetin dhe degën
     list_filter = ('city', 'branch')  # Filtrim sipas qytetit dhe degës
 
@@ -31,4 +32,8 @@ class MyLocationAdmin(LeafletGeoAdmin):
 
 admin.site.register(Location, MyLocationAdmin)
 
+from django.contrib import admin
 
+admin.site.site_title = "Paneli GIS"
+admin.site.site_header = "Paneli i Menaxhimit GIS"
+admin.site.index_title = "Modulet në dispozicion"
